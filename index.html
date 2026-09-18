@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ja" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tasuku - タスク管理アプリ</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="h-full text-slate-800 font-sans antialiased flex flex-col">
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center transition-opacity duration-300">
+        <div class="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+        <p class="mt-4 text-slate-600 font-medium">データを読み込み中...</p>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Confirmation Modal -->
+    <div id="modal-backdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl transform transition-all scale-95 opacity-0" id="modal-content">
+            <h3 id="modal-title" class="text-lg font-bold text-slate-900">確認</h3>
+            <p id="modal-message" class="mt-2 text-sm text-slate-600">本当に実行しますか？</p>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="modal-cancel-btn" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">キャンセル</button>
+                <button id="modal-confirm-btn" class="px-4 py-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors">削除する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login View -->
+    <div id="login-view" class="hidden min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-brand-900">
+        <div class="max-w-md w-full bg-white/95 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center">
+            <div class="w-16 h-16 bg-brand-500 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-brand-500/30">
+                <i class="fa-solid fa-check-double text-2xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Tasuku</h1>
+            <p class="mt-2 text-slate-600">スマートにタスクを整理し、生産性を最大化しましょう。</p>
+
+            <div class="mt-8">
+                <button id="google-login-btn" class="w-full py-3.5 px-4 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-2xl border border-slate-200 shadow-sm flex items-center justify-center gap-3 transition-all hover:shadow-md active:scale-[0.98]">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    Googleでログイン
+                </button>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-slate-100 text-xs text-slate-400">
+                &copy; 2026 Tasuku. Built with Firebase & Tailwind.
+            </div>
+        </div>
+    </div>
+
+    <!-- App Main View -->
+    <div id="app-view" class="hidden flex-1 flex flex-col md:flex-row overflow-hidden">
+        <!-- Sidebar Navigation -->
+        <aside class="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col flex-shrink-0">
+            <div class="p-5 flex items-center justify-between border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-brand-500 text-white rounded-xl flex items-center justify-center font-bold shadow-md shadow-brand-500/20">
+                        <i class="fa-solid fa-check-double"></i>
+                    </div>
+                    <span class="text-xl font-bold text-slate-900 tracking-tight">Tasuku</span>
+                </div>
+                <button id="mobile-menu-btn" class="md:hidden text-slate-500 hover:text-slate-700 p-2">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="p-4 flex-1 overflow-y-auto space-y-6 custom-scrollbar">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">ビュー</p>
+                    <nav class="space-y-1">
+                        <button data-filter="all" class="nav-item active w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors">
+                            <span class="flex items-center gap-3"><i class="fa-solid fa-inbox text-slate-400 w-5"></i>すべてのタスク</span>
+                            <span id="cnt-all" class="bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-semibold">0</span>
+                        </button>
+                        <button data-filter="today" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                            <span class="flex items-center gap-3"><i class="fa-regular fa-calendar-check text-slate-400 w-5"></i>今日のタスク</span>
+                            <span id="cnt-today" class="bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-semibold">0</span>
+                        </button>
+                        <button data-filter="pending" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                            <span class="flex items-center gap-3"><i class="fa-regular fa-clock text-slate-400 w-5"></i>未完了</span>
+                            <span id="cnt-pending" class="bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-semibold">0</span>
+                        </button>
+                        <button data-filter="completed" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                            <span class="flex items-center gap-3"><i class="fa-regular fa-circle-check text-slate-400 w-5"></i>完了済み</span>
+                            <span id="cnt-completed" class="bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-semibold">0</span>
+                        </button>
+                    </nav>
+                </div>
+
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">カテゴリ</p>
+                    <nav id="category-list" class="space-y-1">
+                        <button data-category="all" class="cat-item active w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                            <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>すべて
+                        </button>
+                        <button data-category="仕事" class="cat-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                            <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>仕事
+                        </button>
+                        <button data-category="プライベート" class="cat-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>プライベート
+                        </button>
+                        <button data-category="買い物" class="cat-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>買い物
+                        </button>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- User Profile Section -->
+            <div class="p-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div class="flex items-center gap-3 min-w-0">
+                    <img id="user-avatar" class="w-9 h-9 rounded-full bg-slate-200 border border-slate-300 flex-shrink-0 object-cover" src="" alt="User Avatar">
+                    <div class="min-w-0">
+                        <p id="user-name" class="text-sm font-semibold text-slate-800 truncate">ユーザー名</p>
+                        <p id="user-email" class="text-xs text-slate-500 truncate">email@example.com</p>
+                    </div>
+                </div>
+                <button id="logout-btn" title="ログアウト" class="text-slate-400 hover:text-rose-600 p-2 rounded-lg transition-colors">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Task Area -->
+        <main class="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-hidden">
+            <!-- Top Search and Action Header -->
+            <header class="bg-white border-b border-slate-200 p-4 sm:p-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                <div class="relative flex-1 max-w-md">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="search-input" placeholder="タスクを検索..." class="w-full pl-10 pr-4 py-2 bg-slate-100 hover:bg-slate-100/80 focus:bg-white focus:ring-2 focus:ring-brand-500 rounded-xl text-sm outline-none transition-all border border-transparent focus:border-brand-500">
+                </div>
+                <button id="open-add-task-btn" class="py-2.5 px-5 bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm rounded-xl shadow-sm shadow-brand-500/30 flex items-center justify-center gap-2 transition-all active:scale-95">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>新規タスク追加</span>
+                </button>
+            </header>
+
+            <!-- Stats Bar -->
+            <div class="px-4 sm:px-6 pt-6 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">進行中タスク</p>
+                        <p id="stat-active-cnt" class="text-xl font-bold text-slate-800">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+                        <i class="fa-regular fa-circle-check"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">完了済み</p>
+                        <p id="stat-completed-cnt" class="text-xl font-bold text-slate-800">0</p>
+                    </div>
+                </div>
+                <div class="col-span-2 sm:col-span-1 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs text-slate-500 font-medium">達成率</p>
+                        <div class="flex items-center gap-2">
+                            <span id="stat-rate" class="text-xl font-bold text-slate-800">0%</span>
+                            <div class="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+                                <div id="stat-progress-bar" class="bg-brand-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task List Scroll Area -->
+            <div class="flex-1 p-4 sm:p-6 overflow-y-auto custom-scrollbar">
+                <div id="task-list" class="space-y-3">
+                    <!-- Tasks inserted dynamically -->
+                </div>
+                
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center">
+                    <div class="w-20 h-20 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center text-3xl mb-4">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-700">タスクがありません</h3>
+                    <p class="text-sm text-slate-500 mt-1 max-w-sm">新しいタスクを追加して、日々の作業を整理しましょう。</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Task Slide-over Drawer / Modal -->
+    <div id="task-modal-backdrop" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex justify-end">
+        <div id="task-modal" class="bg-white w-full max-w-lg h-full shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300 ease-in-out">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <h2 id="task-modal-title" class="text-lg font-bold text-slate-800">新規タスク追加</h2>
+                <button id="close-task-modal-btn" class="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="task-form" class="p-6 flex-1 overflow-y-auto space-y-5 custom-scrollbar">
+                <input type="hidden" id="task-id">
+                
+                <div>
+                    <label for="task-title-input" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">タイトル <span class="text-rose-500">*</span></label>
+                    <input type="text" id="task-title-input" required placeholder="タスクのタイトルを入力..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-brand-500 rounded-xl text-sm outline-none transition-all">
+                </div>
+
+                <div>
+                    <label for="task-desc-input" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">詳細・メモ</label>
+                    <textarea id="task-desc-input" rows="3" placeholder="追加の詳細情報やメモ..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-brand-500 rounded-xl text-sm outline-none transition-all resize-none"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="task-date-input" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">期限日</label>
+                        <input type="date" id="task-date-input" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-brand-500 rounded-xl text-sm outline-none transition-all">
+                    </div>
+                    <div>
+                        <label for="task-priority-input" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">優先度</label>
+                        <select id="task-priority-input" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-brand-500 rounded-xl text-sm outline-none transition-all">
+                            <option value="low">低</option>
+                            <option value="medium" selected>中</option>
+                            <option value="high">高</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="task-category-input" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">カテゴリ</label>
+                    <select id="task-category-input" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-brand-500 rounded-xl text-sm outline-none transition-all">
+                        <option value="仕事">仕事</option>
+                        <option value="プライベート">プライベート</option>
+                        <option value="買い物">買い物</option>
+                        <option value="その他">その他</option>
+                    </select>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 flex gap-3">
+                    <button type="button" id="cancel-task-modal-btn" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl text-sm transition-colors">キャンセル</button>
+                    <button type="submit" class="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl text-sm shadow-md shadow-brand-500/20 transition-all active:scale-95">保存する</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDK Script -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            GoogleAuthProvider, 
+            signInWithPopup, 
+            signOut, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            updateDoc, 
+            deleteDoc, 
+            doc, 
+            onSnapshot, 
+            query, 
+            orderBy, 
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // User Provided Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDkCml611NWtNtWodLhOiQ0XurrblQitRc",
+            authDomain: "tasuku-f5db2.firebaseapp.com",
+            projectId: "tasuku-f5db2",
+            storageBucket: "tasuku-f5db2.firebasestorage.app",
+            messagingSenderId: "1000837688391",
+            appId: "1:1000837688391:web:713555f1b0552ee70f5562"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // State Management
+        let currentUser = null;
+        let tasks = [];
+        let unsubscribeTasks = null;
+        let currentFilter = 'all';
+        let currentCategory = 'all';
+        let searchQuery = '';
+
+        // DOM Elements
+        const loadingScreen = document.getElementById('loading-screen');
+        const loginView = document.getElementById('login-view');
+        const appView = document.getElementById('app-view');
+        const googleLoginBtn = document.getElementById('google-login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        
+        const userName = document.getElementById('user-name');
+        const userEmail = document.getElementById('user-email');
+        const userAvatar = document.getElementById('user-avatar');
+
+        const taskList = document.getElementById('task-list');
+        const emptyState = document.getElementById('empty-state');
+        const searchInput = document.getElementById('search-input');
+
+        const openAddTaskBtn = document.getElementById('open-add-task-btn');
+        const taskModalBackdrop = document.getElementById('task-modal-backdrop');
+        const taskModal = document.getElementById('task-modal');
+        const closeTaskModalBtn = document.getElementById('close-task-modal-btn');
+        const cancelTaskModalBtn = document.getElementById('cancel-task-modal-btn');
+        const taskForm = document.getElementById('task-form');
+
+        const modalBackdrop = document.getElementById('modal-backdrop');
+        const modalContent = document.getElementById('modal-content');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+
+        // Auth Listener
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                userName.textContent = user.displayName || 'ユーザー';
+                userEmail.textContent = user.email || '';
+                userAvatar.src = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'U')}&background=3b82f6&color=fff`;
+
+                loginView.classList.add('hidden');
+                appView.classList.remove('hidden');
+                
+                // Subscribe to tasks
+                subscribeToTasks();
+            } else {
+                currentUser = null;
+                if (unsubscribeTasks) unsubscribeTasks();
+                tasks = [];
+                appView.classList.add('hidden');
+                loginView.classList.remove('hidden');
+            }
+            loadingScreen.classList.add('opacity-0');
+            setTimeout(() => loadingScreen.classList.add('hidden'), 300);
+        });
+
+        // Google Login
+        googleLoginBtn.addEventListener('click', async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+                showToast('ログインしました', 'success');
+            } catch (error) {
+                console.error("Login error:", error);
+                showToast('ログインに失敗しました: ' + error.message, 'error');
+            }
+        });
+
+        // Logout
+        logoutBtn.addEventListener('click', () => {
+            showConfirmModal('ログアウト', '本当にログアウトしますか？', async () => {
+                try {
+                    await signOut(auth);
+                    showToast('ログアウトしました', 'info');
+                } catch (error) {
+                    showToast('エラーが発生しました', 'error');
+                }
+            });
+        });
+
+        // Realtime Firestore Subscription
+        function subscribeToTasks() {
+            if (!currentUser) return;
+
+            // Structure path: users/{userId}/tasks
+            const tasksRef = collection(db, 'users', currentUser.uid, 'tasks');
+            const q = query(tasksRef, orderBy('createdAt', 'desc'));
+
+            unsubscribeTasks = onSnapshot(q, (snapshot) => {
+                tasks = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                renderTasks();
+                updateStats();
+            }, (error) => {
+                console.error("Firestore error:", error);
+                showToast('データの取得中にエラーが発生しました', 'error');
+            });
+        }
+
+        // Filter & Category Switchers
+        document.querySelectorAll('.nav-item').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.nav-item').forEach(b => {
+                    b.classList.remove('active', 'bg-brand-50', 'text-brand-600');
+                    b.classList.add('text-slate-600');
+                });
+                const target = e.currentTarget;
+                target.classList.add('active', 'bg-brand-50', 'text-brand-600');
+                target.classList.remove('text-slate-600');
+                currentFilter = target.dataset.filter;
+                renderTasks();
+            });
+        });
+
+        document.querySelectorAll('.cat-item').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.cat-item').forEach(b => {
+                    b.classList.remove('active', 'bg-slate-100', 'font-semibold');
+                });
+                const target = e.currentTarget;
+                target.classList.add('active', 'bg-slate-100', 'font-semibold');
+                currentCategory = target.dataset.category;
+                renderTasks();
+            });
+        });
+
+        // Search Input
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value.toLowerCase().trim();
+            renderTasks();
+        });
+
+        // Render Tasks to UI
+        function renderTasks() {
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            const filtered = tasks.filter(task => {
+                // Filter view
+                if (currentFilter === 'pending' && task.completed) return false;
+                if (currentFilter === 'completed' && !task.completed) return false;
+                if (currentFilter === 'today' && task.dueDate !== todayStr) return false;
+
+                // Category filter
+                if (currentCategory !== 'all' && task.category !== currentCategory) return false;
+
+                // Search query
+                if (searchQuery) {
+                    const titleMatch = task.title?.toLowerCase().includes(searchQuery);
+                    const descMatch = task.description?.toLowerCase().includes(searchQuery);
+                    if (!titleMatch && !descMatch) return false;
+                }
+
+                return true;
+            });
+
+            taskList.innerHTML = '';
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                filtered.forEach(task => {
+                    taskList.appendChild(createTaskCard(task));
+                });
+            }
+        }
+
+        // Create Task Card DOM Element
+        function createTaskCard(task) {
+            const div = document.createElement('div');
+            div.className = `bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all flex items-start justify-between gap-4 group ${task.completed ? 'opacity-65 bg-slate-50/50' : ''}`;
+
+            const priorityBadge = {
+                high: '<span class="bg-rose-50 text-rose-600 border border-rose-200 text-xs px-2.5 py-0.5 rounded-full font-medium">高</span>',
+                medium: '<span class="bg-amber-50 text-amber-600 border border-amber-200 text-xs px-2.5 py-0.5 rounded-full font-medium">中</span>',
+                low: '<span class="bg-blue-50 text-blue-600 border border-blue-200 text-xs px-2.5 py-0.5 rounded-full font-medium">低</span>'
+            }[task.priority || 'medium'];
+
+            div.innerHTML = `
+                <div class="flex items-start gap-3 min-w-0 flex-1">
+                    <button class="toggle-task-btn mt-0.5 w-6 h-6 rounded-lg border-2 ${task.completed ? 'bg-brand-500 border-brand-500 text-white' : 'border-slate-300 text-transparent hover:border-brand-500'} flex items-center justify-center transition-all flex-shrink-0">
+                        <i class="fa-solid fa-check text-xs"></i>
+                    </button>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h4 class="text-base font-semibold text-slate-800 ${task.completed ? 'line-through text-slate-400' : ''}">${escapeHtml(task.title)}</h4>
+                            ${priorityBadge}
+                            ${task.category ? `<span class="bg-slate-100 text-slate-600 text-xs px-2.5 py-0.5 rounded-full font-medium">${escapeHtml(task.category)}</span>` : ''}
+                        </div>
+                        ${task.description ? `<p class="text-sm text-slate-500 mt-1 line-clamp-2 ${task.completed ? 'line-through text-slate-400' : ''}">${escapeHtml(task.description)}</p>` : ''}
+                        ${task.dueDate ? `
+                            <div class="flex items-center gap-1.5 text-xs text-slate-400 mt-2">
+                                <i class="fa-regular fa-calendar"></i>
+                                <span>${task.dueDate}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button class="edit-task-btn p-2 text-slate-400 hover:text-brand-600 rounded-lg hover:bg-slate-100 transition-colors">
+                        <i class="fa-regular fa-pen-to-square"></i>
+                    </button>
+                    <button class="delete-task-btn p-2 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-100 transition-colors">
+                        <i class="fa-regular fa-trash-can"></i>
+                    </button>
+                </div>
+            `;
+
+            // Card Event Listeners
+            div.querySelector('.toggle-task-btn').addEventListener('click', () => toggleTaskComplete(task.id, !task.completed));
+            div.querySelector('.edit-task-btn').addEventListener('click', () => openEditTaskModal(task));
+            div.querySelector('.delete-task-btn').addEventListener('click', () => {
+                showConfirmModal('タスク削除', 'このタスクを削除してもよろしいですか？', () => deleteTask(task.id));
+            });
+
+            return div;
+        }
+
+        // Update Statistics
+        function updateStats() {
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.completed).length;
+            const active = total - completed;
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayCnt = tasks.filter(t => t.dueDate === todayStr).length;
+
+            document.getElementById('stat-active-cnt').textContent = active;
+            document.getElementById('stat-completed-cnt').textContent = completed;
+            
+            const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+            document.getElementById('stat-rate').textContent = `${rate}%`;
+            document.getElementById('stat-progress-bar').style.width = `${rate}%`;
+
+            // Badge counts
+            document.getElementById('cnt-all').textContent = total;
+            document.getElementById('cnt-today').textContent = todayCnt;
+            document.getElementById('cnt-pending').textContent = active;
+            document.getElementById('cnt-completed').textContent = completed;
+        }
+
+        // Modal Handling
+        openAddTaskBtn.addEventListener('click', () => openAddTaskModal());
+        closeTaskModalBtn.addEventListener('click', closeTaskModal);
+        cancelTaskModalBtn.addEventListener('click', closeTaskModal);
+
+        function openAddTaskModal() {
+            document.getElementById('task-modal-title').textContent = '新規タスク追加';
+            taskForm.reset();
+            document.getElementById('task-id').value = '';
+            taskModalBackdrop.classList.remove('hidden');
+            setTimeout(() => taskModal.classList.remove('translate-x-full'), 10);
+        }
+
+        function openEditTaskModal(task) {
+            document.getElementById('task-modal-title').textContent = 'タスクの編集';
+            document.getElementById('task-id').value = task.id;
+            document.getElementById('task-title-input').value = task.title || '';
+            document.getElementById('task-desc-input').value = task.description || '';
+            document.getElementById('task-date-input').value = task.dueDate || '';
+            document.getElementById('task-priority-input').value = task.priority || 'medium';
+            document.getElementById('task-category-input').value = task.category || '仕事';
+
+            taskModalBackdrop.classList.remove('hidden');
+            setTimeout(() => taskModal.classList.remove('translate-x-full'), 10);
+        }
+
+        function closeTaskModal() {
+            taskModal.classList.add('translate-x-full');
+            setTimeout(() => taskModalBackdrop.classList.add('hidden'), 300);
+        }
+
+        // Save Task (Add or Update)
+        taskForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const taskId = document.getElementById('task-id').value;
+            const taskData = {
+                title: document.getElementById('task-title-input').value.trim(),
+                description: document.getElementById('task-desc-input').value.trim(),
+                dueDate: document.getElementById('task-date-input').value,
+                priority: document.getElementById('task-priority-input').value,
+                category: document.getElementById('task-category-input').value,
+                updatedAt: serverTimestamp()
+            };
+
+            try {
+                if (taskId) {
+                    // Update existing
+                    const taskRef = doc(db, 'users', currentUser.uid, 'tasks', taskId);
+                    await updateDoc(taskRef, taskData);
+                    showToast('タスクを更新しました', 'success');
+                } else {
+                    // Create new
+                    taskData.completed = false;
+                    taskData.createdAt = serverTimestamp();
+                    const tasksRef = collection(db, 'users', currentUser.uid, 'tasks');
+                    await addDoc(tasksRef, taskData);
+                    showToast('タスクを追加しました', 'success');
+                }
+                closeTaskModal();
+            } catch (error) {
+                console.error("Save error:", error);
+                showToast('保存中にエラーが発生しました', 'error');
+            }
+        });
+
+        // Toggle Task Completion
+        async function toggleTaskComplete(taskId, completed) {
+            if (!currentUser) return;
+            try {
+                const taskRef = doc(db, 'users', currentUser.uid, 'tasks', taskId);
+                await updateDoc(taskRef, { completed });
+            } catch (error) {
+                console.error("Toggle error:", error);
+                showToast('更新中にエラーが発生しました', 'error');
+            }
+        }
+
+        // Delete Task
+        async function deleteTask(taskId) {
+            if (!currentUser) return;
+            try {
+                const taskRef = doc(db, 'users', currentUser.uid, 'tasks', taskId);
+                await deleteDoc(taskRef);
+                showToast('タスクを削除しました', 'info');
+            } catch (error) {
+                console.error("Delete error:", error);
+                showToast('削除中にエラーが発生しました', 'error');
+            }
+        }
+
+        // Toast Notification System
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgClass = {
+                success: 'bg-emerald-600 text-white',
+                error: 'bg-rose-600 text-white',
+                info: 'bg-slate-800 text-white'
+            }[type];
+
+            toast.className = `${bgClass} px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 pointer-events-auto transform translate-y-2 opacity-0 transition-all duration-300`;
+            toast.innerHTML = `
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Custom Confirm Modal
+        let confirmActionHandler = null;
+        function showConfirmModal(title, message, onConfirm) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            confirmActionHandler = onConfirm;
+
+            modalBackdrop.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeConfirmModal() {
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => modalBackdrop.classList.add('hidden'), 200);
+        }
+
+        modalCancelBtn.addEventListener('click', closeConfirmModal);
+        modalConfirmBtn.addEventListener('click', () => {
+            if (confirmActionHandler) confirmActionHandler();
+            closeConfirmModal();
+        });
+
+        // Utility: HTML Escape
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>"']/g, (m) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[m]);
+        }
+    </script>
+</body>
+</html>
