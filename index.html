@@ -463,19 +463,29 @@
             if (!currentUser || isDemoMode) return;
             if (unsubscribeTasks) unsubscribeTasks();
 
+            // Fetch collection directly without complex orderBy to prevent Firestore index & permission issues
             const tasksRef = collection(db, 'users', currentUser.uid, 'tasks');
-            const q = query(tasksRef, orderBy('createdAt', 'desc'));
 
-            unsubscribeTasks = onSnapshot(q, (snapshot) => {
+            unsubscribeTasks = onSnapshot(tasksRef, (snapshot) => {
                 tasks = snapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data()
                 }));
+                // Sort tasks in JavaScript memory
+                tasks.sort((a, b) => {
+                    const tA = a.createdAt?.seconds || 0;
+                    const tB = b.createdAt?.seconds || 0;
+                    return tB - tA;
+                });
                 renderTasks();
                 updateStats();
             }, (error) => {
                 console.error("Firestore snapshot error:", error);
-                showToast('データの取得に失敗しました', 'error');
+                if (error.code === 'permission-denied') {
+                    showFirestorePermissionErrorModal();
+                } else {
+                    showToast('データの取得に失敗しました', 'error');
+                }
             });
         }
 
@@ -938,7 +948,11 @@
                 closeTaskModal();
             } catch (error) {
                 console.error("Save error:", error);
-                showToast('保存中にエラーが発生しました', 'error');
+                if (error.code === 'permission-denied') {
+                    showFirestorePermissionErrorModal();
+                } else {
+                    showToast('保存中にエラーが発生しました', 'error');
+                }
             }
         });
 
@@ -961,7 +975,11 @@
                 await updateDoc(taskRef, { completed });
             } catch (error) {
                 console.error("Toggle error:", error);
-                showToast('更新中にエラーが発生しました', 'error');
+                if (error.code === 'permission-denied') {
+                    showFirestorePermissionErrorModal();
+                } else {
+                    showToast('更新中にエラーが発生しました', 'error');
+                }
             }
         }
 
@@ -983,8 +1001,35 @@
                 showToast('タスクを削除しました', 'info');
             } catch (error) {
                 console.error("Delete error:", error);
-                showToast('削除中にエラーが発生しました', 'error');
+                if (error.code === 'permission-denied') {
+                    showFirestorePermissionErrorModal();
+                } else {
+                    showToast('削除中にエラーが発生しました', 'error');
+                }
             }
+        }
+
+        // Dedicated Firestore Permission Error Handler Modal
+        function showFirestorePermissionErrorModal() {
+            const rulesSnippet = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}`;
+            const title = 'Firestore パーミッションエラー (permission-denied)';
+            const message = 'Firestoreデータベースのセキュリティルールによりアクセスが拒否されました。';
+            const troubleshoot = `
+                <div class="space-y-2 text-xs">
+                    <strong>【設定方法】:</strong><br>
+                    1. <a href="https://console.firebase.google.com/" target="_blank" class="underline text-brand-600 font-semibold">Firebase Console</a> > Firestore Database > <strong>ルール (Rules)</strong> を開く<br>
+                    2. 以下のコードを貼り付けて<strong>「公開」</strong>をクリックしてください：<br>
+                    <pre class="bg-slate-800 text-slate-100 p-2 rounded-lg font-mono text-[10px] overflow-x-auto select-all mt-1">${escapeHtml(rulesSnippet)}</pre>
+                </div>
+            `;
+            showErrorModal(title, message, troubleshoot, true);
         }
 
         // Toast Notification System
