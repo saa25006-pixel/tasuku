@@ -58,12 +58,16 @@
     <!-- Notification Toast Container -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- Confirmation Modal -->
+    <!-- Confirmation / Error Modal -->
     <div id="modal-backdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl transform transition-all scale-95 opacity-0" id="modal-content">
             <h3 id="modal-title" class="text-lg font-bold text-slate-900">確認</h3>
             <p id="modal-message" class="mt-2 text-sm text-slate-600">本当に実行しますか？</p>
-            <div class="mt-6 flex justify-end gap-3">
+            <div id="modal-troubleshoot" class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 space-y-2 hidden"></div>
+            <div class="mt-6 flex flex-wrap justify-end gap-2">
+                <button id="modal-demo-btn" class="hidden px-4 py-2 text-sm font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 rounded-xl transition-colors">
+                    <i class="fa-solid fa-bolt mr-1"></i>ローカルデモモードで試す
+                </button>
                 <button id="modal-cancel-btn" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">キャンセル</button>
                 <button id="modal-confirm-btn" class="px-4 py-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors">削除する</button>
             </div>
@@ -73,14 +77,25 @@
     <!-- Login View -->
     <div id="login-view" class="hidden min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-brand-900">
         <div class="max-w-md w-full bg-white/95 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center">
-            <div class="w-16 h-16 bg-brand-500 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-brand-500/30">
-                <i class="fa-solid fa-check-double text-2xl"></i>
+            <div class="w-16 h-16 bg-brand-500 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-brand-500/30 text-2xl">
+                <i class="fa-solid fa-check-double"></i>
             </div>
-            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Tasuku</h1>
-            <p class="mt-2 text-slate-600">スマートにタスクを整理し、生産性を最大化しましょう。</p>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Tasuku へようこそ</h1>
+            <p class="mt-2 text-sm text-slate-500">スマートかつシンプルに日々のタスクを管理</p>
 
-            <div class="mt-8">
-                <button id="google-login-btn" class="w-full py-3.5 px-4 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-2xl border border-slate-200 shadow-sm flex items-center justify-center gap-3 transition-all hover:shadow-md active:scale-[0.98]">
+            <div class="mt-8 space-y-3">
+                <button id="demo-mode-btn" class="w-full py-3.5 px-4 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-2xl shadow-md shadow-brand-500/20 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                    <i class="fa-solid fa-bolt text-amber-300"></i>
+                    設定なしですぐに使う（ローカルデモ）
+                </button>
+
+                <div class="relative my-4 flex py-1 items-center">
+                    <div class="flex-grow border-t border-slate-200"></div>
+                    <span class="flex-shrink mx-3 text-xs text-slate-400 font-medium">または Firebase連携でログイン</span>
+                    <div class="flex-grow border-t border-slate-200"></div>
+                </div>
+
+                <button id="google-login-btn" class="w-full py-3 px-4 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-2xl border border-slate-200 shadow-xs flex items-center justify-center gap-3 transition-all hover:shadow-md active:scale-[0.98]">
                     <svg class="w-5 h-5" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -89,9 +104,31 @@
                     </svg>
                     Googleでログイン
                 </button>
+                
+                <button id="guest-login-btn" class="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-2xl border border-slate-200 text-sm flex items-center justify-center gap-2 transition-all">
+                    <i class="fa-solid fa-user-secret text-slate-500"></i>
+                    ゲストログイン（匿名認証）
+                </button>
             </div>
 
-            <div class="mt-8 pt-6 border-t border-slate-100 text-xs text-slate-400">
+            <!-- Current Domain Info Helper Box -->
+            <div class="mt-6 p-3.5 bg-amber-50/80 rounded-2xl border border-amber-200 text-left">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-[11px] font-bold text-amber-900 flex items-center gap-1.5">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
+                        Firebase 承認用ドメイン名
+                    </span>
+                    <button id="copy-domain-btn" class="text-[11px] font-bold text-brand-600 hover:text-brand-700 bg-white px-2 py-0.5 rounded border border-brand-200 flex items-center gap-1 shadow-xs">
+                        <i class="fa-regular fa-copy"></i> コピー
+                    </button>
+                </div>
+                <code id="current-hostname-display" class="block mt-1.5 text-xs text-slate-800 font-mono bg-white p-2 rounded-xl border border-amber-200/80 truncate">--</code>
+                <p class="mt-1.5 text-[10px] text-amber-800 leading-normal">
+                    Googleログインで <code class="font-bold">auth/unauthorized-domain</code> エラーが出た場合は、上のドメインを <strong>Firebase Console > Authentication > 設定 > 承認済みドメイン</strong> に追加してください。設定なしですぐ使う場合は「ローカルデモモード」をお使いいただけます。
+                </p>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-slate-100 text-xs text-slate-400">
                 &copy; 2026 Tasuku. Built with Firebase & Tailwind.
             </div>
         </div>
@@ -100,7 +137,7 @@
     <!-- App Main View -->
     <div id="app-view" class="hidden flex-1 flex flex-col md:flex-row overflow-hidden">
         <!-- Sidebar Navigation -->
-        <aside class="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col flex-shrink-0">
+        <aside id="sidebar" class="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col flex-shrink-0">
             <div class="p-5 flex items-center justify-between border-b border-slate-100">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-brand-500 text-white rounded-xl flex items-center justify-center font-bold shadow-md shadow-brand-500/20">
@@ -108,17 +145,17 @@
                     </div>
                     <span class="text-xl font-bold text-slate-900 tracking-tight">Tasuku</span>
                 </div>
-                <button id="mobile-menu-btn" class="md:hidden text-slate-500 hover:text-slate-700 p-2">
+                <button id="mobile-menu-btn" class="md:hidden text-slate-500 hover:text-slate-700 p-2 rounded-lg">
                     <i class="fa-solid fa-bars text-lg"></i>
                 </button>
             </div>
 
             <!-- Navigation Links -->
-            <div class="p-4 flex-1 overflow-y-auto space-y-6 custom-scrollbar">
+            <div id="nav-container" class="p-4 flex-1 overflow-y-auto space-y-6 custom-scrollbar hidden md:block">
                 <div>
                     <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">ビュー</p>
                     <nav class="space-y-1">
-                        <button data-filter="all" class="nav-item active w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors">
+                        <button data-filter="all" class="nav-item active w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors bg-brand-50 text-brand-600">
                             <span class="flex items-center gap-3"><i class="fa-solid fa-inbox text-slate-400 w-5"></i>すべてのタスク</span>
                             <span id="cnt-all" class="bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-semibold">0</span>
                         </button>
@@ -140,7 +177,7 @@
                 <div>
                     <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">カテゴリ</p>
                     <nav id="category-list" class="space-y-1">
-                        <button data-category="all" class="cat-item active w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                        <button data-category="all" class="cat-item active w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 transition-colors">
                             <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>すべて
                         </button>
                         <button data-category="仕事" class="cat-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
@@ -283,13 +320,12 @@
                         <option value="仕事">仕事</option>
                         <option value="プライベート">プライベート</option>
                         <option value="買い物">買い物</option>
-                        <option value="その他">その他</option>
                     </select>
                 </div>
 
-                <div class="pt-4 border-t border-slate-100 flex gap-3">
-                    <button type="button" id="cancel-task-modal-btn" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl text-sm transition-colors">キャンセル</button>
-                    <button type="submit" class="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl text-sm shadow-md shadow-brand-500/20 transition-all active:scale-95">保存する</button>
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                    <button type="button" id="cancel-task-modal-btn" class="px-5 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">キャンセル</button>
+                    <button type="submit" class="px-5 py-2.5 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-sm transition-colors">保存する</button>
                 </div>
             </form>
         </div>
@@ -302,6 +338,7 @@
             getAuth, 
             GoogleAuthProvider, 
             signInWithPopup, 
+            signInAnonymously,
             signOut, 
             onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -335,33 +372,37 @@
 
         // State Management
         let currentUser = null;
+        let isDemoMode = false;
         let tasks = [];
         let unsubscribeTasks = null;
         let currentFilter = 'all';
         let currentCategory = 'all';
         let searchQuery = '';
 
-        // DOM Elements
         const loadingScreen = document.getElementById('loading-screen');
         const loginView = document.getElementById('login-view');
         const appView = document.getElementById('app-view');
         const googleLoginBtn = document.getElementById('google-login-btn');
+        const guestLoginBtn = document.getElementById('guest-login-btn');
+        const demoModeBtn = document.getElementById('demo-mode-btn');
+        const copyDomainBtn = document.getElementById('copy-domain-btn');
+        const currentHostnameDisplay = document.getElementById('current-hostname-display');
         const logoutBtn = document.getElementById('logout-btn');
-        
         const userName = document.getElementById('user-name');
         const userEmail = document.getElementById('user-email');
         const userAvatar = document.getElementById('user-avatar');
 
-        const taskList = document.getElementById('task-list');
-        const emptyState = document.getElementById('empty-state');
-        const searchInput = document.getElementById('search-input');
-
-        const openAddTaskBtn = document.getElementById('open-add-task-btn');
         const taskModalBackdrop = document.getElementById('task-modal-backdrop');
         const taskModal = document.getElementById('task-modal');
+        const taskForm = document.getElementById('task-form');
+        const openAddTaskBtn = document.getElementById('open-add-task-btn');
         const closeTaskModalBtn = document.getElementById('close-task-modal-btn');
         const cancelTaskModalBtn = document.getElementById('cancel-task-modal-btn');
-        const taskForm = document.getElementById('task-form');
+        const taskModalTitle = document.getElementById('task-modal-title');
+
+        const searchInput = document.getElementById('search-input');
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const navContainer = document.getElementById('nav-container');
 
         const modalBackdrop = document.getElementById('modal-backdrop');
         const modalContent = document.getElementById('modal-content');
@@ -370,59 +411,58 @@
         const modalCancelBtn = document.getElementById('modal-cancel-btn');
         const modalConfirmBtn = document.getElementById('modal-confirm-btn');
 
-        // Auth Listener
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                userName.textContent = user.displayName || 'ユーザー';
-                userEmail.textContent = user.email || '';
-                userAvatar.src = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'U')}&background=3b82f6&color=fff`;
+        // Display current hostname
+        if (currentHostnameDisplay) {
+            currentHostnameDisplay.textContent = window.location.hostname || 'localhost';
+        }
 
-                loginView.classList.add('hidden');
-                appView.classList.remove('hidden');
-                
-                // Subscribe to tasks
-                subscribeToTasks();
-            } else {
-                currentUser = null;
-                if (unsubscribeTasks) unsubscribeTasks();
-                tasks = [];
-                appView.classList.add('hidden');
-                loginView.classList.remove('hidden');
-            }
-            loadingScreen.classList.add('opacity-0');
-            setTimeout(() => loadingScreen.classList.add('hidden'), 300);
+        // Domain copy button listener
+        copyDomainBtn?.addEventListener('click', () => {
+            copyToClipboard(window.location.hostname);
+            showToast('ドメイン名をコピーしました', 'success');
         });
 
-        // Google Login
-        googleLoginBtn.addEventListener('click', async () => {
-            const provider = new GoogleAuthProvider();
-            try {
-                await signInWithPopup(auth, provider);
-                showToast('ログインしました', 'success');
-            } catch (error) {
-                console.error("Login error:", error);
-                showToast('ログインに失敗しました: ' + error.message, 'error');
-            }
+        // Mobile Menu Toggle
+        mobileMenuBtn?.addEventListener('click', () => {
+            navContainer?.classList.toggle('hidden');
         });
 
-        // Logout
-        logoutBtn.addEventListener('click', () => {
-            showConfirmModal('ログアウト', '本当にログアウトしますか？', async () => {
-                try {
-                    await signOut(auth);
-                    showToast('ログアウトしました', 'info');
-                } catch (error) {
-                    showToast('エラーが発生しました', 'error');
-                }
+        // Filter Navigation handlers
+        document.querySelectorAll('.nav-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.nav-item').forEach(b => {
+                    b.classList.remove('bg-brand-50', 'text-brand-600', 'active');
+                    b.classList.add('text-slate-600');
+                });
+                btn.classList.add('bg-brand-50', 'text-brand-600', 'active');
+                btn.classList.remove('text-slate-600');
+                currentFilter = btn.dataset.filter || 'all';
+                renderTasks();
             });
         });
 
-        // Realtime Firestore Subscription
-        function subscribeToTasks() {
-            if (!currentUser) return;
+        // Category Filter handlers
+        document.querySelectorAll('.cat-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.cat-item').forEach(b => {
+                    b.classList.remove('bg-slate-100');
+                });
+                btn.classList.add('bg-slate-100');
+                currentCategory = btn.dataset.category || 'all';
+                renderTasks();
+            });
+        });
 
-            // Structure path: users/{userId}/tasks
+        // Search Input listener
+        searchInput?.addEventListener('input', (e) => {
+            searchQuery = e.target.value.toLowerCase().trim();
+            renderTasks();
+        });
+
+        function subscribeToTasks() {
+            if (!currentUser || isDemoMode) return;
+            if (unsubscribeTasks) unsubscribeTasks();
+
             const tasksRef = collection(db, 'users', currentUser.uid, 'tasks');
             const q = query(tasksRef, orderBy('createdAt', 'desc'));
 
@@ -434,206 +474,461 @@
                 renderTasks();
                 updateStats();
             }, (error) => {
-                console.error("Firestore error:", error);
-                showToast('データの取得中にエラーが発生しました', 'error');
+                console.error("Firestore snapshot error:", error);
+                showToast('データの取得に失敗しました', 'error');
             });
         }
 
-        // Filter & Category Switchers
-        document.querySelectorAll('.nav-item').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.nav-item').forEach(b => {
-                    b.classList.remove('active', 'bg-brand-50', 'text-brand-600');
-                    b.classList.add('text-slate-600');
-                });
-                const target = e.currentTarget;
-                target.classList.add('active', 'bg-brand-50', 'text-brand-600');
-                target.classList.remove('text-slate-600');
-                currentFilter = target.dataset.filter;
-                renderTasks();
-            });
-        });
-
-        document.querySelectorAll('.cat-item').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.cat-item').forEach(b => {
-                    b.classList.remove('active', 'bg-slate-100', 'font-semibold');
-                });
-                const target = e.currentTarget;
-                target.classList.add('active', 'bg-slate-100', 'font-semibold');
-                currentCategory = target.dataset.category;
-                renderTasks();
-            });
-        });
-
-        // Search Input
-        searchInput.addEventListener('input', (e) => {
-            searchQuery = e.target.value.toLowerCase().trim();
-            renderTasks();
-        });
-
-        // Render Tasks to UI
         function renderTasks() {
+            const taskList = document.getElementById('task-list');
+            const emptyState = document.getElementById('empty-state');
+            if (!taskList) return;
+
             const todayStr = new Date().toISOString().split('T')[0];
 
             const filtered = tasks.filter(task => {
-                // Filter view
+                // View Filter
+                if (currentFilter === 'today' && task.dueDate !== todayStr) return false;
                 if (currentFilter === 'pending' && task.completed) return false;
                 if (currentFilter === 'completed' && !task.completed) return false;
-                if (currentFilter === 'today' && task.dueDate !== todayStr) return false;
 
-                // Category filter
+                // Category Filter
                 if (currentCategory !== 'all' && task.category !== currentCategory) return false;
 
-                // Search query
+                // Search Query
                 if (searchQuery) {
-                    const titleMatch = task.title?.toLowerCase().includes(searchQuery);
-                    const descMatch = task.description?.toLowerCase().includes(searchQuery);
+                    const titleMatch = (task.title || '').toLowerCase().includes(searchQuery);
+                    const descMatch = (task.description || '').toLowerCase().includes(searchQuery);
                     if (!titleMatch && !descMatch) return false;
                 }
 
                 return true;
             });
 
-            taskList.innerHTML = '';
-
             if (filtered.length === 0) {
-                emptyState.classList.remove('hidden');
+                taskList.innerHTML = '';
+                emptyState?.classList.remove('hidden');
             } else {
-                emptyState.classList.add('hidden');
-                filtered.forEach(task => {
-                    taskList.appendChild(createTaskCard(task));
-                });
-            }
-        }
+                emptyState?.classList.add('hidden');
+                taskList.innerHTML = filtered.map(task => {
+                    const priorityColor = {
+                        high: 'bg-rose-100 text-rose-700 border-rose-200',
+                        medium: 'bg-amber-100 text-amber-700 border-amber-200',
+                        low: 'bg-slate-100 text-slate-600 border-slate-200'
+                    }[task.priority || 'medium'];
 
-        // Create Task Card DOM Element
-        function createTaskCard(task) {
-            const div = document.createElement('div');
-            div.className = `bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all flex items-start justify-between gap-4 group ${task.completed ? 'opacity-65 bg-slate-50/50' : ''}`;
+                    const priorityLabel = { high: '高', medium: '中', low: '低' }[task.priority || 'medium'];
 
-            const priorityBadge = {
-                high: '<span class="bg-rose-50 text-rose-600 border border-rose-200 text-xs px-2.5 py-0.5 rounded-full font-medium">高</span>',
-                medium: '<span class="bg-amber-50 text-amber-600 border border-amber-200 text-xs px-2.5 py-0.5 rounded-full font-medium">中</span>',
-                low: '<span class="bg-blue-50 text-blue-600 border border-blue-200 text-xs px-2.5 py-0.5 rounded-full font-medium">低</span>'
-            }[task.priority || 'medium'];
+                    const catBg = {
+                        '仕事': 'bg-blue-50 text-blue-700 border-blue-200',
+                        'プライベート': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                        '買い物': 'bg-amber-50 text-amber-700 border-amber-200'
+                    }[task.category] || 'bg-slate-50 text-slate-600 border-slate-200';
 
-            div.innerHTML = `
-                <div class="flex items-start gap-3 min-w-0 flex-1">
-                    <button class="toggle-task-btn mt-0.5 w-6 h-6 rounded-lg border-2 ${task.completed ? 'bg-brand-500 border-brand-500 text-white' : 'border-slate-300 text-transparent hover:border-brand-500'} flex items-center justify-center transition-all flex-shrink-0">
-                        <i class="fa-solid fa-check text-xs"></i>
-                    </button>
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <h4 class="text-base font-semibold text-slate-800 ${task.completed ? 'line-through text-slate-400' : ''}">${escapeHtml(task.title)}</h4>
-                            ${priorityBadge}
-                            ${task.category ? `<span class="bg-slate-100 text-slate-600 text-xs px-2.5 py-0.5 rounded-full font-medium">${escapeHtml(task.category)}</span>` : ''}
-                        </div>
-                        ${task.description ? `<p class="text-sm text-slate-500 mt-1 line-clamp-2 ${task.completed ? 'line-through text-slate-400' : ''}">${escapeHtml(task.description)}</p>` : ''}
-                        ${task.dueDate ? `
-                            <div class="flex items-center gap-1.5 text-xs text-slate-400 mt-2">
-                                <i class="fa-regular fa-calendar"></i>
-                                <span>${task.dueDate}</span>
+                    return `
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex items-start gap-3.5 group ${task.completed ? 'opacity-60 bg-slate-50/50' : ''}">
+                            <input type="checkbox" ${task.completed ? 'checked' : ''} 
+                                onclick="window.toggleTaskComplete('${task.id}', ${!task.completed})"
+                                class="mt-1 w-5 h-5 rounded-lg text-brand-600 border-slate-300 focus:ring-brand-500 cursor-pointer transition-all">
+                            
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h4 class="text-sm font-semibold text-slate-800 ${task.completed ? 'line-through text-slate-400' : ''}">${escapeHtml(task.title)}</h4>
+                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border ${priorityColor}">${priorityLabel}</span>
+                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border ${catBg}">${escapeHtml(task.category || 'その他')}</span>
+                                </div>
+                                ${task.description ? `<p class="mt-1 text-xs text-slate-500 leading-relaxed ${task.completed ? 'line-through' : ''}">${escapeHtml(task.description)}</p>` : ''}
+                                ${task.dueDate ? `
+                                    <div class="mt-2.5 flex items-center gap-1.5 text-xs ${task.dueDate < todayStr && !task.completed ? 'text-rose-600 font-semibold' : 'text-slate-400'}">
+                                        <i class="fa-regular fa-calendar"></i>
+                                        <span>${task.dueDate} ${task.dueDate < todayStr && !task.completed ? ' (期限切れ)' : ''}</span>
+                                    </div>
+                                ` : ''}
                             </div>
-                        ` : ''}
-                    </div>
-                </div>
-                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button class="edit-task-btn p-2 text-slate-400 hover:text-brand-600 rounded-lg hover:bg-slate-100 transition-colors">
-                        <i class="fa-regular fa-pen-to-square"></i>
-                    </button>
-                    <button class="delete-task-btn p-2 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-100 transition-colors">
-                        <i class="fa-regular fa-trash-can"></i>
-                    </button>
-                </div>
-            `;
 
-            // Card Event Listeners
-            div.querySelector('.toggle-task-btn').addEventListener('click', () => toggleTaskComplete(task.id, !task.completed));
-            div.querySelector('.edit-task-btn').addEventListener('click', () => openEditTaskModal(task));
-            div.querySelector('.delete-task-btn').addEventListener('click', () => {
-                showConfirmModal('タスク削除', 'このタスクを削除してもよろしいですか？', () => deleteTask(task.id));
-            });
+                            <div class="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="window.editTask('${task.id}')" class="p-2 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors" title="編集">
+                                    <i class="fa-solid fa-pen text-xs"></i>
+                                </button>
+                                <button onclick="window.confirmDeleteTask('${task.id}')" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="削除">
+                                    <i class="fa-solid fa-trash text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
 
-            return div;
+            updateCounters();
         }
 
-        // Update Statistics
         function updateStats() {
+            const activeCount = tasks.filter(t => !t.completed).length;
+            const completedCount = tasks.filter(t => t.completed).length;
             const total = tasks.length;
-            const completed = tasks.filter(t => t.completed).length;
-            const active = total - completed;
+            const rate = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+
+            const statActive = document.getElementById('stat-active-cnt');
+            const statCompleted = document.getElementById('stat-completed-cnt');
+            const statRate = document.getElementById('stat-rate');
+            const statBar = document.getElementById('stat-progress-bar');
+
+            if (statActive) statActive.textContent = activeCount;
+            if (statCompleted) statCompleted.textContent = completedCount;
+            if (statRate) statRate.textContent = `${rate}%`;
+            if (statBar) statBar.style.width = `${rate}%`;
+        }
+
+        function updateCounters() {
             const todayStr = new Date().toISOString().split('T')[0];
-            const todayCnt = tasks.filter(t => t.dueDate === todayStr).length;
+            const cntAll = document.getElementById('cnt-all');
+            const cntToday = document.getElementById('cnt-today');
+            const cntPending = document.getElementById('cnt-pending');
+            const cntCompleted = document.getElementById('cnt-completed');
 
-            document.getElementById('stat-active-cnt').textContent = active;
-            document.getElementById('stat-completed-cnt').textContent = completed;
-            
-            const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
-            document.getElementById('stat-rate').textContent = `${rate}%`;
-            document.getElementById('stat-progress-bar').style.width = `${rate}%`;
-
-            // Badge counts
-            document.getElementById('cnt-all').textContent = total;
-            document.getElementById('cnt-today').textContent = todayCnt;
-            document.getElementById('cnt-pending').textContent = active;
-            document.getElementById('cnt-completed').textContent = completed;
+            if (cntAll) cntAll.textContent = tasks.length;
+            if (cntToday) cntToday.textContent = tasks.filter(t => t.dueDate === todayStr).length;
+            if (cntPending) cntPending.textContent = tasks.filter(t => !t.completed).length;
+            if (cntCompleted) cntCompleted.textContent = tasks.filter(t => t.completed).length;
         }
 
-        // Modal Handling
-        openAddTaskBtn.addEventListener('click', () => openAddTaskModal());
-        closeTaskModalBtn.addEventListener('click', closeTaskModal);
-        cancelTaskModalBtn.addEventListener('click', closeTaskModal);
+        function openTaskModal(editTaskData = null) {
+            const taskId = document.getElementById('task-id');
+            const titleInput = document.getElementById('task-title-input');
+            const descInput = document.getElementById('task-desc-input');
+            const dateInput = document.getElementById('task-date-input');
+            const priorityInput = document.getElementById('task-priority-input');
+            const categoryInput = document.getElementById('task-category-input');
 
-        function openAddTaskModal() {
-            document.getElementById('task-modal-title').textContent = '新規タスク追加';
-            taskForm.reset();
-            document.getElementById('task-id').value = '';
-            taskModalBackdrop.classList.remove('hidden');
-            setTimeout(() => taskModal.classList.remove('translate-x-full'), 10);
-        }
+            if (editTaskData) {
+                if (taskModalTitle) taskModalTitle.textContent = 'タスクの編集';
+                if (taskId) taskId.value = editTaskData.id;
+                if (titleInput) titleInput.value = editTaskData.title || '';
+                if (descInput) descInput.value = editTaskData.description || '';
+                if (dateInput) dateInput.value = editTaskData.dueDate || '';
+                if (priorityInput) priorityInput.value = editTaskData.priority || 'medium';
+                if (categoryInput) categoryInput.value = editTaskData.category || '仕事';
+            } else {
+                if (taskModalTitle) taskModalTitle.textContent = '新規タスク追加';
+                taskForm?.reset();
+                if (taskId) taskId.value = '';
+                if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+            }
 
-        function openEditTaskModal(task) {
-            document.getElementById('task-modal-title').textContent = 'タスクの編集';
-            document.getElementById('task-id').value = task.id;
-            document.getElementById('task-title-input').value = task.title || '';
-            document.getElementById('task-desc-input').value = task.description || '';
-            document.getElementById('task-date-input').value = task.dueDate || '';
-            document.getElementById('task-priority-input').value = task.priority || 'medium';
-            document.getElementById('task-category-input').value = task.category || '仕事';
-
-            taskModalBackdrop.classList.remove('hidden');
-            setTimeout(() => taskModal.classList.remove('translate-x-full'), 10);
+            taskModalBackdrop?.classList.remove('hidden');
+            setTimeout(() => {
+                taskModal?.classList.remove('translate-x-full');
+            }, 10);
         }
 
         function closeTaskModal() {
-            taskModal.classList.add('translate-x-full');
-            setTimeout(() => taskModalBackdrop.classList.add('hidden'), 300);
+            taskModal?.classList.add('translate-x-full');
+            setTimeout(() => {
+                taskModalBackdrop?.classList.add('hidden');
+            }, 300);
         }
 
+        openAddTaskBtn?.addEventListener('click', () => openTaskModal());
+        closeTaskModalBtn?.addEventListener('click', closeTaskModal);
+        cancelTaskModalBtn?.addEventListener('click', closeTaskModal);
+
+        window.toggleTaskComplete = toggleTaskComplete;
+        window.editTask = (id) => {
+            const task = tasks.find(t => t.id === id);
+            if (task) openTaskModal(task);
+        };
+        window.confirmDeleteTask = (id) => {
+            showConfirmModal('タスク削除', 'このタスクを削除しますか？元に戻すことはできません。', () => {
+                deleteTask(id);
+            });
+        };
+
+        // Auth Listener
+        onAuthStateChanged(auth, (user) => {
+            if (user && !isDemoMode) {
+                currentUser = user;
+                const isAnonymous = user.isAnonymous;
+                if (userName) userName.textContent = isAnonymous ? 'ゲストユーザー' : (user.displayName || 'ユーザー');
+                if (userEmail) userEmail.textContent = isAnonymous ? 'ゲスト（Firebase匿名）' : (user.email || '');
+                if (userAvatar) userAvatar.src = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(isAnonymous ? 'Guest' : (user.displayName || 'U'))}&background=${isAnonymous ? '64748b' : '3b82f6'}&color=fff`;
+
+                loginView?.classList.add('hidden');
+                appView?.classList.remove('hidden');
+                
+                // Subscribe to tasks
+                subscribeToTasks();
+            } else if (!isDemoMode) {
+                currentUser = null;
+                if (unsubscribeTasks) unsubscribeTasks();
+                tasks = [];
+                appView?.classList.add('hidden');
+                loginView?.classList.remove('hidden');
+            }
+            if (loadingScreen) {
+                loadingScreen.classList.add('opacity-0');
+                setTimeout(() => loadingScreen.classList.add('hidden'), 300);
+            }
+        });
+
+        // Start Demo Mode Handler
+        demoModeBtn?.addEventListener('click', startDemoMode);
+
+        function startDemoMode() {
+            isDemoMode = true;
+            currentUser = { uid: 'demo-local-user' };
+            
+            if (userName) userName.textContent = 'デモユーザー';
+            if (userEmail) userEmail.textContent = 'ローカルストレージ動作中';
+            if (userAvatar) userAvatar.src = `https://ui-avatars.com/api/?name=Demo&background=f59e0b&color=fff`;
+
+            loginView?.classList.add('hidden');
+            appView?.classList.remove('hidden');
+
+            // Load local storage tasks
+            loadLocalTasks();
+            showToast('ローカルデモモードを開始しました', 'info');
+        }
+
+        // Local Storage Handlers for Demo Mode
+        function loadLocalTasks() {
+            const saved = localStorage.getItem('tasuku_demo_tasks');
+            if (saved) {
+                try {
+                    tasks = JSON.parse(saved);
+                } catch(e) {
+                    tasks = getInitialDemoTasks();
+                }
+            } else {
+                tasks = getInitialDemoTasks();
+                saveLocalTasks();
+            }
+            renderTasks();
+            updateStats();
+        }
+
+        function saveLocalTasks() {
+            localStorage.setItem('tasuku_demo_tasks', JSON.stringify(tasks));
+        }
+
+        function getInitialDemoTasks() {
+            const today = new Date().toISOString().split('T')[0];
+            return [
+                { id: '1', title: 'Firebase Consoleで承認済みドメインを追加する', description: `承認済みドメインに "${window.location.hostname}" を追加してください。`, dueDate: today, priority: 'high', category: '仕事', completed: false },
+                { id: '2', title: 'GitHub Pagesでアプリを公開する', description: 'リポジトリにindex.htmlをプッシュしてGitHub Pagesを有効化', dueDate: today, priority: 'medium', category: '仕事', completed: false },
+                { id: '3', title: '新しいタスクを作成してみる', description: '右上の「新規タスク追加」ボタンから自由に追加できます', dueDate: today, priority: 'low', category: 'プライベート', completed: true }
+            ];
+        }
+
+        // Google Login with Error Handling
+        googleLoginBtn?.addEventListener('click', async () => {
+            isDemoMode = false;
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+                showToast('ログインしました', 'success');
+            } catch (error) {
+                console.error("Login error:", error);
+                handleAuthError(error);
+            }
+        });
+
+        // Guest Login
+        guestLoginBtn?.addEventListener('click', async () => {
+            isDemoMode = false;
+            try {
+                await signInAnonymously(auth);
+                showToast('ゲストとしてログインしました', 'success');
+            } catch (error) {
+                console.error("Guest login error:", error);
+                handleAuthError(error);
+            }
+        });
+
+        // Enhanced Auth Error Troubleshooting Handler
+        function handleAuthError(error) {
+            let title = 'ログインエラー';
+            let message = error.message;
+            let troubleshoot = '';
+            let showDemoOption = false;
+
+            const hostname = window.location.hostname || 'localhost';
+
+            switch (error.code) {
+                case 'auth/unauthorized-domain':
+                    title = '承認されていないドメイン (unauthorized-domain)';
+                    message = `現在のドメイン (<strong>${hostname}</strong>) がFirebase Authenticationの承認リストに登録されていません。`;
+                    troubleshoot = `
+                        <div class="space-y-1.5">
+                            <strong>【解決方法】:</strong><br>
+                            1. <a href="https://console.firebase.google.com/" target="_blank" class="underline text-brand-600 font-semibold">Firebase Console</a> > Authentication > 設定 > 承認済みドメイン を開く<br>
+                            2. 「ドメインの追加」をクリックし、以下を入力して保存してください：<br>
+                            <div class="mt-1 flex items-center justify-between bg-white p-1.5 rounded border border-amber-300 font-mono text-[11px]">
+                                <span id="modal-domain-text">${hostname}</span>
+                                <button type="button" id="modal-copy-domain-btn" class="px-2 py-0.5 bg-amber-200 hover:bg-amber-300 rounded font-sans text-[10px] text-amber-900 font-bold">コピー</button>
+                            </div>
+                        </div>
+                    `;
+                    showDemoOption = true;
+                    break;
+                case 'auth/operation-not-allowed':
+                    title = 'ログイン機能が未有効 (operation-not-allowed)';
+                    message = 'Firebase Consoleでログインプロバイダが有効化されていません。';
+                    troubleshoot = `
+                        <strong>解決方法:</strong><br>
+                        1. Firebase Console > Authentication > Sign-in method を開く<br>
+                        2. 「Google」または「匿名」を選択し、有効にして保存してください。
+                    `;
+                    showDemoOption = true;
+                    break;
+                case 'auth/popup-blocked':
+                    title = 'ポップアップがブロックされました';
+                    message = 'ブラウザのポップアップブロック設定によりログイン画面が開けませんでした。';
+                    break;
+                case 'auth/popup-closed-by-user':
+                    showToast('ログインがキャンセルされました', 'info');
+                    return;
+                default:
+                    message = `エラーコード: ${error.code || 'UNKNOWN'}<br>${error.message}`;
+                    showDemoOption = true;
+                    break;
+            }
+
+            showErrorModal(title, message, troubleshoot, showDemoOption);
+        }
+
+        function showErrorModal(title, message, troubleshootHtml, showDemoOption = false) {
+            if (modalTitle) modalTitle.textContent = title;
+            if (modalMessage) modalMessage.innerHTML = message;
+            
+            const troubleshootBox = document.getElementById('modal-troubleshoot');
+            if (troubleshootBox) {
+                if (troubleshootHtml) {
+                    troubleshootBox.innerHTML = troubleshootHtml;
+                    troubleshootBox.classList.remove('hidden');
+                    
+                    // Attach modal copy button listener
+                    const copyBtn = document.getElementById('modal-copy-domain-btn');
+                    if (copyBtn) {
+                        copyBtn.onclick = () => {
+                            copyToClipboard(window.location.hostname);
+                            showToast('ドメイン名をコピーしました', 'success');
+                        };
+                    }
+                } else {
+                    troubleshootBox.classList.add('hidden');
+                }
+            }
+
+            const demoBtn = document.getElementById('modal-demo-btn');
+            if (demoBtn) {
+                if (showDemoOption) {
+                    demoBtn.classList.remove('hidden');
+                    demoBtn.onclick = () => {
+                        closeConfirmModal();
+                        startDemoMode();
+                    };
+                } else {
+                    demoBtn.classList.add('hidden');
+                }
+            }
+
+            if (modalConfirmBtn) {
+                modalConfirmBtn.textContent = '閉じる';
+                modalConfirmBtn.className = 'px-4 py-2 text-sm font-medium text-white bg-slate-700 hover:bg-slate-800 rounded-xl transition-colors';
+            }
+            confirmActionHandler = null;
+
+            modalBackdrop?.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent?.classList.remove('scale-95', 'opacity-0');
+                modalContent?.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        // Copy Helper function with fallback
+        function copyToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+
+        // Logout
+        logoutBtn?.addEventListener('click', () => {
+            showConfirmModal('ログアウト', 'ログアウトしてログイン画面に戻りますか？', async () => {
+                try {
+                    if (isDemoMode) {
+                        isDemoMode = false;
+                        currentUser = null;
+                        appView?.classList.add('hidden');
+                        loginView?.classList.remove('hidden');
+                        showToast('デモモードを終了しました', 'info');
+                    } else {
+                        await signOut(auth);
+                        showToast('ログアウトしました', 'info');
+                    }
+                } catch (error) {
+                    showToast('エラーが発生しました', 'error');
+                }
+            });
+        });
+
         // Save Task (Add or Update)
-        taskForm.addEventListener('submit', async (e) => {
+        taskForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUser) return;
 
-            const taskId = document.getElementById('task-id').value;
+            const taskId = document.getElementById('task-id')?.value;
+            const titleInput = document.getElementById('task-title-input')?.value.trim();
+            const descInput = document.getElementById('task-desc-input')?.value.trim();
+            const dateInput = document.getElementById('task-date-input')?.value;
+            const priorityInput = document.getElementById('task-priority-input')?.value;
+            const categoryInput = document.getElementById('task-category-input')?.value;
+
+            if (isDemoMode) {
+                if (taskId) {
+                    const index = tasks.findIndex(t => t.id === taskId);
+                    if (index !== -1) {
+                        tasks[index] = { ...tasks[index], title: titleInput, description: descInput, dueDate: dateInput, priority: priorityInput, category: categoryInput };
+                    }
+                } else {
+                    tasks.unshift({
+                        id: Date.now().toString(),
+                        title: titleInput,
+                        description: descInput,
+                        dueDate: dateInput,
+                        priority: priorityInput,
+                        category: categoryInput,
+                        completed: false
+                    });
+                }
+                saveLocalTasks();
+                renderTasks();
+                updateStats();
+                showToast(taskId ? 'タスクを更新しました' : 'タスクを追加しました', 'success');
+                closeTaskModal();
+                return;
+            }
+
             const taskData = {
-                title: document.getElementById('task-title-input').value.trim(),
-                description: document.getElementById('task-desc-input').value.trim(),
-                dueDate: document.getElementById('task-date-input').value,
-                priority: document.getElementById('task-priority-input').value,
-                category: document.getElementById('task-category-input').value,
+                title: titleInput,
+                description: descInput,
+                dueDate: dateInput,
+                priority: priorityInput,
+                category: categoryInput,
                 updatedAt: serverTimestamp()
             };
 
             try {
                 if (taskId) {
-                    // Update existing
                     const taskRef = doc(db, 'users', currentUser.uid, 'tasks', taskId);
                     await updateDoc(taskRef, taskData);
                     showToast('タスクを更新しました', 'success');
                 } else {
-                    // Create new
                     taskData.completed = false;
                     taskData.createdAt = serverTimestamp();
                     const tasksRef = collection(db, 'users', currentUser.uid, 'tasks');
@@ -649,6 +944,17 @@
 
         // Toggle Task Completion
         async function toggleTaskComplete(taskId, completed) {
+            if (isDemoMode) {
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    task.completed = completed;
+                    saveLocalTasks();
+                    renderTasks();
+                    updateStats();
+                }
+                return;
+            }
+
             if (!currentUser) return;
             try {
                 const taskRef = doc(db, 'users', currentUser.uid, 'tasks', taskId);
@@ -661,6 +967,15 @@
 
         // Delete Task
         async function deleteTask(taskId) {
+            if (isDemoMode) {
+                tasks = tasks.filter(t => t.id !== taskId);
+                saveLocalTasks();
+                renderTasks();
+                updateStats();
+                showToast('タスクを削除しました', 'info');
+                return;
+            }
+
             if (!currentUser) return;
             try {
                 const taskRef = doc(db, 'users', currentUser.uid, 'tasks', taskId);
@@ -675,6 +990,8 @@
         // Toast Notification System
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
+            if (!container) return;
+
             const toast = document.createElement('div');
             
             const bgClass = {
@@ -684,9 +1001,7 @@
             }[type];
 
             toast.className = `${bgClass} px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 pointer-events-auto transform translate-y-2 opacity-0 transition-all duration-300`;
-            toast.innerHTML = `
-                <span>${message}</span>
-            `;
+            toast.innerHTML = `<span>${message}</span>`;
 
             container.appendChild(toast);
             setTimeout(() => {
@@ -702,25 +1017,34 @@
         // Custom Confirm Modal
         let confirmActionHandler = null;
         function showConfirmModal(title, message, onConfirm) {
-            modalTitle.textContent = title;
-            modalMessage.textContent = message;
+            if (modalTitle) modalTitle.textContent = title;
+            if (modalMessage) modalMessage.textContent = message;
+            
+            const troubleshootBox = document.getElementById('modal-troubleshoot');
+            if (troubleshootBox) troubleshootBox.classList.add('hidden');
+
+            if (modalConfirmBtn) {
+                modalConfirmBtn.textContent = '削除する';
+                modalConfirmBtn.className = 'px-4 py-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors';
+            }
+
             confirmActionHandler = onConfirm;
 
-            modalBackdrop.classList.remove('hidden');
+            modalBackdrop?.classList.remove('hidden');
             setTimeout(() => {
-                modalContent.classList.remove('scale-95', 'opacity-0');
-                modalContent.classList.add('scale-100', 'opacity-100');
+                modalContent?.classList.remove('scale-95', 'opacity-0');
+                modalContent?.classList.add('scale-100', 'opacity-100');
             }, 10);
         }
 
         function closeConfirmModal() {
-            modalContent.classList.remove('scale-100', 'opacity-100');
-            modalContent.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => modalBackdrop.classList.add('hidden'), 200);
+            modalContent?.classList.remove('scale-100', 'opacity-100');
+            modalContent?.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => modalBackdrop?.classList.add('hidden'), 200);
         }
 
-        modalCancelBtn.addEventListener('click', closeConfirmModal);
-        modalConfirmBtn.addEventListener('click', () => {
+        modalCancelBtn?.addEventListener('click', closeConfirmModal);
+        modalConfirmBtn?.addEventListener('click', () => {
             if (confirmActionHandler) confirmActionHandler();
             closeConfirmModal();
         });
